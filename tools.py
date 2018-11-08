@@ -10,6 +10,7 @@
 
 import requests
 import random
+import base64
 from datetime import datetime, timedelta
 from fake_useragent import UserAgent
 
@@ -17,7 +18,13 @@ from fake_useragent import UserAgent
 
 ua = UserAgent()
 
+cabin_dict = {'E': 'Economy',
+              'P': 'PremiumEconomy',
+              'B': 'Business',
+              'F': 'First'}
 
+
+    
 def airport_city_code(city):
     timestamp = get_timestamp()
     keyword = base64.b64encode(city.encode('utf-8')).decode('ascii')
@@ -73,7 +80,7 @@ def city_name(code):
 def format_date(date):
     date = str(date)
     if '-' in date:
-        return input
+        return date
     else:
         y = date[:-4]
         m = date[-4:-2]
