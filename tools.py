@@ -9,7 +9,7 @@
 
 
 import requests
-import time
+import random
 from datetime import datetime, timedelta
 from fake_useragent import UserAgent
 
@@ -19,7 +19,7 @@ ua = UserAgent()
 
 
 def airport_city_code(city):
-    timestamp = int(time.time() * 1000)
+    timestamp = get_timestamp()
     keyword = base64.b64encode(city.encode('utf-8')).decode('ascii')
     url = 'https://www.igola.com/web-gateway/api-data-service/data/find-airport?text=%s&lang=Wkg=&timestamp=%s' % (keyword, timestamp)
     with requests.session() as s:
@@ -103,11 +103,18 @@ def date_list(start_date, end_date):
     return li
 
 
-# 获取加密时间戳
-def get_timestamp():
-    t = int(datetime.now().timestamp())
-    timestamp = 97 * t % 1000 + t * 1000
+# 获取时间戳
+def get_timestamp(encode=0):
+    t = datetime.now().timestamp()
+    if encode == 0:
+        timestamp = int(t * 1000)
+    else:
+        t=int(t)
+        timestamp = 97 * t % 1000 + t * 1000
     return str(timestamp)
 
-
-
+# 随机生成ip
+def random_ip():
+    ip = ".".join(map(str, (random.randint(0, 255)
+                            for _ in range(4))))
+    return ip
