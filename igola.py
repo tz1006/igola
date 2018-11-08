@@ -51,6 +51,7 @@ def roundtrip_polling(departCity, arrivalCity, departDate, returnDate, cabin='E'
                      'accept-encoding': 'gzip, deflate, br',
                      'accept-language': 'ZH',
                      'authorization': 'null',
+                     'connection': 'close',
                      'content-length': str(len(spayload)),
                      'content-Type': 'application/json;charset=UTF-8',
                      'guid': 'null',
@@ -241,13 +242,117 @@ class igola():
 
 
 
+        
+        
+# igola2     
+
+class igola():
+    def __init__(self, city):
+        self.city =  city_code(city)[0]
+        self.cityname = city_name(city)
+        self.destination = ['上海', '南京', '北京', '杭州', '武汉', '重庆', '天津', '长沙', '广州', '深圳','海口', '盐城', '南通', '三亚', '无锡', '厦门', '福州', '西安']
+        self.stop = 1
+        self.currency = 'CNY'
+        self.cabin = 'E'
+        self.stay = 1
+        self.debug = 0
+        self.max_workers = 200
+        self.d = {}
+    def roundtrip(self, departCity, arrivalCity, departDate, returnDate):
+        r = roundtrip_polling(departCity, arrivalCity, departDate, returnDate, cabin=self.cabin, currency=self.currency, debug=self.debug)
+        prices = {}
+        stopinfo = r['stopInfo']
+        for i in stopinfo:
+            s = i['stops']
+            lowestPrice = i['lowestPrice']
+            if lowestPrice != None:
+                lowestPrice = int(lowestPrice)
+                prices[s] = lowestPrice
+        result = []
+        for i in prices:
+            if i <= self.stop:
+                result.append(prices[i])
+        result.sort()
+        if result == []:
+            price = None
+            stop = None
+        else:
+            price = result[0]
+            stop = list(prices)[list(prices.values()).index(price)]
+        self.count += 1
+        key = '{}-{} {} {}-{}'.format(city_name(departCity), city_name(arrivalCity), stop, format_date(departDate), format_date(returnDate))
+        self.d[key] = price
+    def toCity(self, arrivalCity, departStartDate, departEndDate, returnStartDate, returnEndDate):
+        self.d = {}
+        departStartDate = format_date(departStartDate)
+        departEndDate = format_date(departEndDate)
+        returnStartDate = format_date(returnStartDate)
+        returnEndDate = format_date(returnEndDate)
+        departlist = []
+        returnlist = []
+        departDatelist = date_list(departStartDate, departEndDate)
+        returnDatelist = date_list(returnStartDate, returnEndDate)
+        for i in departDatelist:
+            for l in returnDatelist:
+                a = int('%s%s%s' % (i.split('-')[0], i.split('-')[1], i.split('-')[2]))
+                b = int('%s%s%s' % (l.split('-')[0], l.split('-')[1], l.split('-')[2]))
+                if a < b:
+                    date_diff = (datetime.strptime(l, '%Y-%m-%d') - datetime.strptime(i, '%Y-%m-%d')).days
+                    if date_diff >= self.stay:
+                        departlist.append(i)
+                        returnlist.append(l)
+        print('执行%d次搜索' % len(departlist))
+        futures = []
+        with ThreadPoolExecutor(self.max_workers) as executor:
+            for i in range(len(departlist)):
+                futures.append(executor.submit(self.roundtrip, self.city, arrivalCity, departlist[i], returnlist[i]))
+            kwargs = {'total': len(futures)}
+            for f in tqdm(as_completed(futures), **kwargs):
+                pass
+        result = sorted(self.d.items(), key=lambda item: (item[1], item[0]))
+        pprint(result)
+    def toDest(self, departStartDate, departEndDate, returnStartDate, returnEndDate):
+        self.d = {}
+        self.con = []
+        self.count = 0
+        departStartDate = format_date(departStartDate)
+        departEndDate = format_date(departEndDate)
+        returnStartDate = format_date(returnStartDate)
+        returnEndDate = format_date(returnEndDate)
+        departlist = []
+        returnlist = []
+        departDatelist = date_list(departStartDate, departEndDate)
+        returnDatelist = date_list(returnStartDate, returnEndDate)
+        for i in departDatelist:
+            for l in returnDatelist:
+                a = int('%s%s%s' % (i.split('-')[0], i.split('-')[1], i.split('-')[2]))
+                b = int('%s%s%s' % (l.split('-')[0], l.split('-')[1], l.split('-')[2]))
+                if a < b:
+                    date_diff = (datetime.strptime(l, '%Y-%m-%d') - datetime.strptime(i, '%Y-%m-%d')).days
+                    if date_diff >= self.stay:
+                        departlist.append(i)
+                        returnlist.append(l)
+        print('执行%d次搜索' % (len(departlist)*len(self.destination)))
+        futures = []
+        with ThreadPoolExecutor(self.max_workers) as executor:
+            for i in range(len(departlist)):
+                for x in self.destination:
+                    futures.append(executor.submit(self.roundtrip, self.city, x, departlist[i], returnlist[i]))
+            kwargs = {'total': len(futures)}
+            for f in tqdm(as_completed(futures), **kwargs):
+                pass
+        result = sorted(self.d.items(), key=lambda item: (item[1], item[0]))
+        pprint(result)
+
+
 
 
 
 lax = igola('lax')
+#lax.destination = ['上海', '南京', '北京']
 #lax.roundtrip('lax', 'sha', 20181121,20181201)
-
-
+lax.toDest('20181215', '20181217', '20190103', '20190106')
+lax.count
 
 lax.toCity('lax', 'sha', '20181215', '20181221', '20181201', '20190103')
 
