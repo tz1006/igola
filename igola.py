@@ -190,6 +190,7 @@ class igola():
         self.cabin = 'E'
         self.stay = 1
         self.debug = 0
+        self.max_workers = 200
         self.d = {}
     def roundtrip(self, departCity, arrivalCity, departDate, returnDate):
         r = roundtrip_polling(departCity, arrivalCity, departDate, returnDate, cabin=self.cabin, currency=self.currency, debug=self.debug)
@@ -228,7 +229,7 @@ class igola():
                         returnlist.append(l)
         print('执行%d次搜索' % len(departlist))
         futures = []
-        with ThreadPoolExecutor(max_workers=200) as executor:
+        with ThreadPoolExecutor(self.max_workers) as executor:
             for i in range(len(departlist)):
                 futures.append(executor.submit(self.roundtrip, departCity, arrivalCity, departlist[i], returnlist[i]))
             kwargs = {'total': len(futures)}
