@@ -51,7 +51,7 @@ def roundtrip_polling(departCity, arrivalCity, departDate, returnDate, cabin='E'
                      'accept-encoding': 'gzip, deflate, br',
                      'accept-language': 'ZH',
                      'authorization': 'null',
-                     'connection': 'close',
+                     'connection': 'keep-alive',
                      'content-length': str(len(spayload)),
                      'content-Type': 'application/json;charset=UTF-8',
                      'guid': 'null',
@@ -67,12 +67,14 @@ def roundtrip_polling(departCity, arrivalCity, departDate, returnDate, cabin='E'
             return s.cookies, s.headers
         sessionid = sr.json()['sessionId']
         # DEBUG
-        if debug != 0:
+        if debug == 1:
             print('DEBUG       CREATE-SESSION')
+            print('SESSION-ID: %s' % sessionid)
             print('请求头：')
-            return(sr.request.headers)
+            print(sr.request.headers)
             print('载荷： %d' % len(spayload))
             pprint(spayload)
+            return sr
         # packagedPolling请求
         payload = json.dumps({"currency": currency,
                               "lang":"ZH",
@@ -92,14 +94,15 @@ def roundtrip_polling(departCity, arrivalCity, departDate, returnDate, cabin='E'
         if resultCode != 200:
             print('状态码2: %s' % resultCode)
         # DEBUG
-        if debug != 0:
+        if debug == 2:
             print('DEBUG       SINGLEPOLLING')
             print('请求头：')
             pprint(r.request.headers)
             print('载荷： %d' % len(payload))
             pprint(payload)
+            return r
         return r.json()
-
+# r = roundtrip_polling('lax', 'sha', 20181121, 20181201, cabin='E', currency='CNY', debug=0)
 
 
 def roundtrip (departCity, arrivalCity, departDate, returnDate, stop=0, cabin='E', currency='CNY', debug=0):
