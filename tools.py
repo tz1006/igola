@@ -13,7 +13,7 @@ import random
 import base64
 from datetime import datetime, timedelta
 from fake_useragent import UserAgent
-
+from urllib.parse import urlencode
 
 
 ua = UserAgent()
@@ -125,3 +125,56 @@ def random_ip():
     ip = ".".join(map(str, (random.randint(0, 255)
                             for _ in range(4))))
     return ip
+
+  
+
+# 直飞城市
+def direct_flight(city, date='', debug=0):
+    if date != '':
+        date = format_date(date)
+    url = 'https://map.variflight.com/drx?_c=TTT'
+    airport_list = airport_code(city)
+    li = []
+    for airport in airport_list:
+        departcode = airport
+        arrivecode = ''
+        payload = urlencode(dict(
+            queryDate1 = date,
+            queryDate2 = date,
+            alliance = '',
+            dep = departcode,
+            depType = 1,
+            arr = arrivecode,
+            arrType = 1,
+            isDirect = 1,
+            isStop = 0,
+            isOwn =  1,
+            isShare = 0,
+            isConnect = 0,
+            isDomestic = 1,
+            isCross = 0))
+        # print(payload)
+        with requests.session() as s:
+            s.headers = {'Accept': 'application/json, text/javascript, */*; q=0.01',
+                         'Accept-Encoding': 'gzip, deflate',
+                         'Accept-Language': 'en,zh-CN;q=0.9,zh;q=0.8,en-US;q=0.7',
+                         'Connection': 'close',
+                         'Content-Length': str(len(payload)),
+                         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                         'Host': 'map.variflight.com',
+                         'Origin': 'http://map.variflight.com',
+                         'Referer': 'http://map.variflight.com/',
+                         'User-Agent': ua.random,
+                         'X-Requested-With': 'XMLHttpRequest'}
+            code = 10
+            while code != 0:
+                r = s.post(url, data=payload)
+                code = r.json()['code']
+                if code != 0:
+                    time.sleep(0.5)
+        result = r.json()['data']
+        for i in result:
+            li.append(i[1])
+    return li
+
+
